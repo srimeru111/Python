@@ -1,0 +1,29 @@
+sentence = input("Enter your sentence: ")
+
+word_count = len(sentence.split())
+count_w = sentence.count(" ")
+char_count = len(sentence)
+special_count = sum(not (c.isalnum() or c.isspace()) for c in sentence)
+
+vowels = "aeiouAEIOU"
+vowel_count = sum(1 for char in sentence if char in vowels)
+
+lower_sentence = sentence.lower()
+seen = set()
+duplicates = set()
+
+for char in lower_sentence:
+    if char in seen:
+        duplicates.add(char)
+    else:
+        seen.add(char)
+
+# Display
+print("\n--- Analysis Results ---")
+print(f"Duplicate characters: {list(duplicates)}")
+print(f"Vowel count: {vowel_count}")
+print(f"Special characters count: {special_count}")
+print(f"Character count: {char_count}")
+print(f"White space count: {count_w}")
+print(f"Word count: {word_count}")
+print(f"Original sentence: {sentence}")
