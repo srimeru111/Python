@@ -1,0 +1,29 @@
+import re
+from collections import Counter
+text = """i am sri meru maringanti
+i am 21 years old
+ok bye"""
+def word_tok(text):
+    return re.findall(r"\w+", text, re.UNICODE)
+def char_tok(text):
+    return [char for char in text if not char.isspace()]
+def byte_tok(text):
+    return list(text.encode("utf-8"))
+words = word_tok(text)
+charr = char_tok(text)
+byte = byte_tok(text)
+print("=" * 100)
+print("WORD TOKEN")
+print("=" * 100)
+print("No. of words:", len(word_tok(text)))
+print("Words:", words)
+print("=" * 100)
+print("CHARACTER TOKEN")
+print("=" * 100)
+print("No. of characters:", len(charr))
+print("Characters:", charr)
+print("=" * 100)
+print("BYTE TOKEN")
+print("=" * 100)
+print("No. of Bytes:",len(byte))
+print("Bytes:",byte)
