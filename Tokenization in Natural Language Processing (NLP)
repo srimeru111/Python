@@ -1,0 +1,198 @@
+import re
+from collections import Counter
+
+text = '''
+Welcome to GDB Online.
+GDB online is an online compiler and debugger tool for C, C++, Python, Java, PHP, Ruby, Perl,
+C#, OCaml, VB, Swift, Pascal, Fortran, Haskell, Objective-C, Assembly, HTML, CSS, JS, SQLite, Prolog.
+Code, Compile, Run and Debug online from anywhere in world.
+'''
+
+
+def word_tok(text):
+    return re.findall(r"\w+|[^\w\s]", text, re.UNICODE)
+
+
+def char_tok(text):
+    return [char for char in text if not char.isspace()]
+
+
+def byte_tok(text):
+    return list(text.encode("utf-8"))
+
+
+def get_words(text):
+    return re.findall(r"\b[a-zA-Z]+\b", text.lower())
+
+
+def build_bpe_vocab(text):
+    words = get_words(text)
+    vocab = Counter()
+
+    for word in words:
+        chars = list(word) + ["</w>"]
+        vocab[tuple(chars)] += 1
+
+    return vocab
+
+
+def get_pair_counts(vocab):
+    pairs = Counter()
+
+    for word, frequency in vocab.items():
+        for i in range(len(word) - 1):
+            pair = (word[i], word[i + 1])
+            pairs[pair] += frequency
+
+    return pairs
+
+def merge_pair(pair, vocab):
+    new_vocab = Counter()
+
+    for word, frequency in vocab.items():
+        new_word = []
+        i = 0
+
+        while i < len(word):
+            if (
+                i < len(word) - 1
+                and word[i] == pair[0]
+                and word[i + 1] == pair[1]
+            ):
+                new_word.append(word[i] + word[i + 1])
+                i += 2
+            else:
+                new_word.append(word[i])
+                i += 1
+
+        new_vocab[tuple(new_word)] += frequency
+
+    return new_vocab
+
+
+def train_bpe(text, num_merges=20):
+    vocab = build_bpe_vocab(text)
+    merges = []
+
+    for _ in range(num_merges):
+        pair_counts = get_pair_counts(vocab)
+
+        if not pair_counts:
+            break
+
+        best_pair = pair_counts.most_common(1)[0][0]
+
+        vocab = merge_pair(best_pair, vocab)
+        merges.append(best_pair)
+
+    return merges
+
+
+def apply_bpe_to_word(word, merges):
+    tokens = list(word.lower()) + ["</w>"]
+
+    for pair in merges:
+        new_tokens = []
+        i = 0
+
+        while i < len(tokens):
+            if (
+                i < len(tokens) - 1
+                and tokens[i] == pair[0]
+                and tokens[i + 1] == pair[1]
+            ):
+                new_tokens.append(tokens[i] + tokens[i + 1])
+                i += 2
+            else:
+                new_tokens.append(tokens[i])
+                i += 1
+
+        tokens = new_tokens
+
+    # Remove end-of-word marker
+    tokens = [token.replace("</w>", "") for token in tokens]
+
+    # Remove empty tokens
+    return [token for token in tokens if token]
+
+
+def subword_tok(text, merges):
+    words = get_words(text)
+    tokens = []
+
+    for word in words:
+        tokens.extend(apply_bpe_to_word(word, merges))
+
+    return tokens
+
+
+word_tokens = word_tok(text)
+
+char_tokens = char_tok(text)
+
+byte_tokens = byte_tok(text)
+
+bpe_merges = train_bpe(text, num_merges=20)
+
+subword_tokens = subword_tok(text, bpe_merges)
+
+
+
+print("=" * 100)
+print("*** WORD TOKENIZATION ***")
+print("=" * 100)
+
+print(word_tokens)
+print("Number of tokens:", len(word_tokens))
+
+
+print("\n" + "=" * 100)
+print("*** CHARACTER TOKENIZATION ***")
+print("=" * 100)
+
+print(char_tokens)
+print("Number of tokens:", len(char_tokens))
+
+
+print("\n" + "=" * 100)
+print("*** BYTE TOKENIZATION ***")
+print("=" * 100)
+
+print(byte_tokens)
+print("Number of tokens:", len(byte_tokens))
+
+
+print("\n" + "=" * 100)
+print("*** SUBWORD TOKENIZATION (BPE) ***")
+print("=" * 100)
+
+print(subword_tokens)
+print("Number of tokens:", len(subword_tokens))
+
+
+print("\n" + "=" * 100)
+print("*** BPE MERGES ***")
+print("=" * 100)
+
+print(bpe_merges)
+
+print("\n" + "=" * 60)
+print("TOKENIZATION COMPARISON")
+print("=" * 60)
+
+results = {
+    "Word": len(word_tokens),
+    "Subword": len(subword_tokens),
+    "Character": len(char_tokens),
+    "Byte": len(byte_tokens)
+}
+
+for method, count in results.items():
+    print(f"{method}: {count} tokens")
+
+
+minimum_method = min(results, key=results.get)
+maximum_method = max(results, key=results.get)
+
+print("\nMinimum tokens :", minimum_method)
+print("Maximum tokens :", maximum_method)
